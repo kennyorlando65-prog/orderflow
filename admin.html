@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>OrderFlow Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Syne','Helvetica Neue',sans-serif;background:#080808;color:#EDEDED;min-height:100vh;max-width:480px;margin:0 auto;}
+  ::-webkit-scrollbar{width:0;height:0;}
+  input,textarea{outline:none;font-family:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  .fade-in{animation:fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+  .press{transition:transform 0.12s cubic-bezier(0.34,1.56,0.64,1),opacity 0.12s;}
+  .press:active{transform:scale(0.94);opacity:0.8;}
+  .lux-input{width:100%;padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;color:#EDEDED;font-size:14px;font-family:inherit;transition:border-color 0.2s;}
+  .lux-input:focus{border-color:rgba(201,168,76,0.45);}
+  .lux-input::placeholder{color:#383838;}
+  .lux-label{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#444;display:block;margin-bottom:7px;}
+  .gold-btn{width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,#C9A84C,#E8C97A);color:#0a0a0a;font-weight:800;font-size:15px;font-family:inherit;}
+  .gold-btn:active{transform:scale(0.97);}
+  .header{padding:18px 20px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;background:rgba(8,8,8,0.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05);}
+  .logo-box{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#C9A84C,#E8C97A);display:flex;align-items:center;justify-content:center;}
+  .page{padding:20px 16px 40px;}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+  .stat-card{background:#0e0e0e;border:1px solid rgba(255,255,255,0.05);border-radius:16px;padding:16px;}
+  .stat-value{font-size:28px;font-weight:800;letter-spacing:-0.04em;line-height:1;}
+  .stat-label{font-size:11px;font-weight:600;color:#444;margin-top:6px;letter-spacing:0.06em;text-transform:uppercase;}
+  .glow-sep{height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.3),transparent);margin:20px 0;}
+  .vendor-card{background:#111;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:16px;margin-bottom:10px;}
+  .vendor-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .vendor-avatar{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex-shrink:0;}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;}
+  .badge-active{background:rgba(0,229,160,0.1);color:#00E5A0;border:1px solid rgba(0,229,160,0.2);}
+  .badge-inactive{background:rgba(255,92,92,0.1);color:#FF5C5C;border:1px solid rgba(255,92,92,0.2);}
+  .badge-expired{background:rgba(245,166,35,0.1);color:#F5A623;border:1px solid rgba(245,166,35,0.2);}
+  .vendor-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+  .mini-stat{background:#0a0a0a;border-radius:10px;padding:10px;text-align:center;}
+  .mini-val{font-weight:800;font-size:16px;color:#EDEDED;letter-spacing:-0.03em;}
+  .mini-label{font-size:10px;color:#383838;margin-top:3px;letter-spacing:0.05em;text-transform:uppercase;font-weight:600;}
+  .action-row{display:flex;gap:8px;}
+  .activate-btn{flex:1;padding:10px;border-radius:12px;border:1px solid rgba(0,229,160,0.2);background:rgba(0,229,160,0.1);color:#00E5A0;font-weight:700;font-size:13px;font-family:inherit;}
+  .activate-btn:active{transform:scale(0.97);}
+  .deactivate-btn{flex:1;padding:10px;border-radius:12px;border:1px solid rgba(255,92,92,0.15);background:rgba(255,92,92,0.08);color:#FF5C5C;font-weight:700;font-size:13px;font-family:inherit;}
+  .deactivate-btn:active{transform:scale(0.97);}
+  .extend-btn{flex:1;padding:10px;border-radius:12px;border:1px solid rgba(201,168,76,0.2);background:rgba(201,168,76,0.08);color:#C9A84C;font-weight:700;font-size:13px;font-family:inherit;}
+  .extend-btn:active{transform:scale(0.97);}
+  .expiry-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 12px;background:#0a0a0a;border-radius:10px;}
+  .expiry-label{font-size:11px;color:#444;letter-spacing:0.04em;}
+  .expiry-date{font-size:12px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+  .auth-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;}
+  .loading{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;}
+  .spinner{width:32px;height:32px;border:2px solid rgba(201,168,76,0.2);border-top-color:#C9A84C;border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:100px;font-weight:600;font-size:13px;z-index:9999;white-space:nowrap;backdrop-filter:blur(20px);display:none;}
+  .search-wrap{position:relative;margin-bottom:16px;}
+  .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;}
+  .tab-row{display:flex;gap:8px;margin-bottom:20px;}
+  .tab-btn{flex:1;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#444;font-weight:700;font-size:13px;font-family:inherit;}
+  .tab-btn.active{background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.3);color:#C9A84C;}
+  .empty{text-align:center;padding:60px 20px;}
+  .empty-title{font-weight:700;font-size:15px;color:#444;margin-bottom:6px;}
+  .empty-sub{color:#2e2e2e;font-size:13px;}
+  .logout-btn{background:transparent;border:1px solid rgba(255,92,92,0.2);border-radius:10px;padding:8px 14px;color:#FF5C5C;font-weight:600;font-size:12px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="loading"><div class="spinner"></div><div style="color:#444;font-size:13px;margin-top:8px;">Loading Admin…</div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://kxkiysmbwltvztrswegg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_K-2LRPW1MLw3po4jxSthcg_g_vcoGYs';
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let state = { user:null, isAdmin:false, vendors:[], tab:'all', searchQ:'' };
+
+let toastTimer;
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = (type==='success'?'✓  ':'✕  ') + msg;
+  t.style.background = type==='error' ? 'rgba(255,92,92,0.15)' : 'rgba(0,229,160,0.1)';
+  t.style.border = type==='error' ? '1px solid rgba(255,92,92,0.3)' : '1px solid rgba(0,229,160,0.25)';
+  t.style.color = type==='error' ? '#FF5C5C' : '#00E5A0';
+  t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.style.display='none'; }, 3000);
+}
+
+async function loadVendors() {
+  const [profilesRes, ordersRes] = await Promise.all([
+    sb.from('profiles').select('*'),
+    sb.from('orders').select('user_id, total, status')
+  ]);
+
+  const profiles = profilesRes.data || [];
+  const orders = ordersRes.data || [];
+
+  state.vendors = profiles.filter(p => !p.is_admin).map(p => {
+    const vo = orders.filter(o => o.user_id === p.id);
+    return {
+      ...p,
+      order_count: vo.length,
+      total_revenue: vo.reduce((s,o)=>s+Number(o.total||0), 0),
+      delivered_count: vo.filter(o=>o.status==='Delivered').length,
+    };
+  });
+}
+
+function isExpired(v) {
+  if(!v.plan_expires_at) return false;
+  return new Date(v.plan_expires_at) < new Date();
+}
+
+async function activateVendor(id) {
+  const expires = new Date();
+  expires.setMonth(expires.getMonth() + 1);
+  await sb.from('profiles').update({ is_active:true, plan_expires_at:expires.toISOString() }).eq('id', id);
+  const v = state.vendors.find(v=>v.id===id);
+  if(v){ v.is_active=true; v.plan_expires_at=expires.toISOString(); }
+  showToast('Activated for 1 month!');
+  render();
+}
+
+async function extendVendor(id) {
+  const v = state.vendors.find(v=>v.id===id);
+  if(!v) return;
+  const base = v.plan_expires_at && new Date(v.plan_expires_at) > new Date()
+    ? new Date(v.plan_expires_at) : new Date();
+  base.setMonth(base.getMonth()+1);
+  await sb.from('profiles').update({ is_active:true, plan_expires_at:base.toISOString() }).eq('id', id);
+  v.is_active=true; v.plan_expires_at=base.toISOString();
+  showToast('Extended by 1 month!');
+  render();
+}
+
+async function deactivateVendor(id) {
+  await sb.from('profiles').update({ is_active:false }).eq('id', id);
+  const v = state.vendors.find(v=>v.id===id);
+  if(v) v.is_active=false;
+  showToast('Account deactivated','error');
+  render();
+}
+
+function renderAuth() {
+  return `
+  <div class="auth-screen fade-in">
+    <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#C9A84C,#E8C97A);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    </div>
+    <div style="font-weight:800;font-size:26px;letter-spacing:-0.04em;text-align:center;margin-bottom:6px;">Admin Panel</div>
+    <div style="color:#444;font-size:14px;text-align:center;margin-bottom:36px;line-height:1.6;">OrderFlow · Vendor Management</div>
+    <div style="width:100%;">
+      <div style="margin-bottom:14px;"><label class="lux-label">Email</label><input class="lux-input" id="auth-email" type="email" placeholder="your@email.com" /></div>
+      <div style="margin-bottom:20px;"><label class="lux-label">Password</label><input class="lux-input" id="auth-password" type="password" placeholder="Your password" /></div>
+      <button class="gold-btn press" id="auth-submit">Log In to Admin</button>
+      <div style="text-align:center;margin-top:16px;"><a href="/" style="color:#444;font-size:13px;text-decoration:none;">← Back to app</a></div>
+    </div>
+  </div>`;
+}
+
+function renderDashboard() {
+  const total = state.vendors.length;
+  const active = state.vendors.filter(v=>v.is_active&&!isExpired(v)).length;
+  const expired = state.vendors.filter(v=>isExpired(v)).length;
+  const inactive = state.vendors.filter(v=>!v.is_active).length;
+  const totalOrders = state.vendors.reduce((s,v)=>s+(v.order_count||0),0);
+
+  let filtered = [...state.vendors];
+  if(state.tab==='active') filtered = filtered.filter(v=>v.is_active&&!isExpired(v));
+  if(state.tab==='inactive') filtered = filtered.filter(v=>!v.is_active||isExpired(v));
+  if(state.searchQ) {
+    const q = state.searchQ.toLowerCase();
+    filtered = filtered.filter(v=> v.email?.toLowerCase().includes(q) || v.business_name?.toLowerCase().includes(q));
+  }
+
+  const cards = filtered.length === 0
+    ? `<div class="empty"><div class="empty-title">No vendors found</div><div class="empty-sub">Nobody has signed up yet or nothing matches your search</div></div>`
+    : filtered.map(v => {
+        const isActive = v.is_active && !isExpired(v);
+        const isExp = isExpired(v);
+        const initial = (v.business_name||v.email||'?')[0].toUpperCase();
+        const expiryText = v.plan_expires_at
+          ? new Date(v.plan_expires_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})
+          : 'Not set';
+        return `
+        <div class="vendor-card fade-in" style="border-color:${isActive?'rgba(0,229,160,0.12)':isExp?'rgba(245,166,35,0.1)':'rgba(255,92,92,0.08)'};">
+          <div class="vendor-top">
+            <div class="vendor-avatar" style="background:${isActive?'rgba(0,229,160,0.08)':'rgba(255,92,92,0.06)'};border:1px solid ${isActive?'rgba(0,229,160,0.15)':'rgba(255,92,92,0.1)'};color:${isActive?'#00E5A0':'#FF5C5C'};">${initial}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;font-size:14px;color:#EDEDED;">${v.business_name||'No business name'}</div>
+              <div style="color:#383838;font-size:11px;margin-top:2px;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.email||'No email'}</div>
+            </div>
+            <span class="badge ${isActive?'badge-active':isExp?'badge-expired':'badge-inactive'}">
+              <span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0;"></span>
+              ${isActive?'Active':isExp?'Expired':'Inactive'}
+            </span>
+          </div>
+          <div class="vendor-stats">
+            <div class="mini-stat"><div class="mini-val">${v.order_count||0}</div><div class="mini-label">Orders</div></div>
+            <div class="mini-stat"><div class="mini-val">${v.delivered_count||0}</div><div class="mini-label">Delivered</div></div>
+            <div class="mini-stat"><div class="mini-val" style="font-size:13px;">₦${((v.total_revenue||0)/1000).toFixed(1)}k</div><div class="mini-label">Revenue</div></div>
+          </div>
+          <div class="expiry-row">
+            <span class="expiry-label">Subscription expires</span>
+            <span class="expiry-date" style="color:${isExp?'#FF5C5C':isActive?'#00E5A0':'#444'};">${expiryText}</span>
+          </div>
+          <div class="action-row">
+            ${!isActive?`<button class="activate-btn press" data-activate="${v.id}">Activate 1 Month</button>`:''}
+            ${isActive?`<button class="extend-btn press" data-extend="${v.id}">+ 1 Month</button>`:''}
+            ${isActive?`<button class="deactivate-btn press" data-deactivate="${v.id}">Deactivate</button>`:''}
+          </div>
+        </div>`;
+      }).join('');
+
+  return `
+  <div class="page fade-in">
+    <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#383838;font-weight:600;margin-bottom:16px;">${new Date().toLocaleDateString('en-NG',{weekday:'long',day:'numeric',month:'long'})}</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-value" style="color:#C9A84C;">${total}</div><div class="stat-label">Total Vendors</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:#00E5A0;">${active}</div><div class="stat-label">Active</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:#F5A623;">${expired}</div><div class="stat-label">Expired</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:#FF5C5C;">${inactive}</div><div class="stat-label">Inactive</div></div>
+    </div>
+    <div style="background:#0e0e0e;border:1px solid rgba(255,255,255,0.05);border-radius:16px;padding:16px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:11px;color:#444;letter-spacing:0.06em;text-transform:uppercase;font-weight:600;">Total Orders Processed</div>
+        <div style="font-weight:800;font-size:28px;color:#EDEDED;letter-spacing:-0.04em;margin-top:4px;">${totalOrders}</div>
+      </div>
+      <div style="font-size:36px;">📦</div>
+    </div>
+    <div class="glow-sep"></div>
+    <div class="tab-row">
+      <button class="tab-btn ${state.tab==='all'?'active':''} press" data-tab="all">All (${total})</button>
+      <button class="tab-btn ${state.tab==='active'?'active':''} press" data-tab="active">Active (${active})</button>
+      <button class="tab-btn ${state.tab==='inactive'?'active':''} press" data-tab="inactive">Off (${inactive+expired})</button>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#383838" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
+      <input class="lux-input" id="search-input" placeholder="Search by name or email…" value="${state.searchQ}" style="padding-left:40px;" />
+    </div>
+    ${cards}
+  </div>`;
+}
+
+function render() {
+  const app = document.getElementById('app');
+
+  if(!state.user) {
+    app.innerHTML = renderAuth();
+    document.getElementById('auth-submit')?.addEventListener('click', async () => {
+      const email = document.getElementById('auth-email')?.value.trim();
+      const password = document.getElementById('auth-password')?.value;
+      if(!email||!password){ showToast('Enter email and password','error'); return; }
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if(error) showToast(error.message,'error');
+    });
+    document.querySelectorAll('.lux-input').forEach(el => {
+      el.addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('auth-submit')?.click(); });
+    });
+    return;
+  }
+
+  if(!state.isAdmin) {
+    app.innerHTML = `<div class="auth-screen"><div style="text-align:center;"><div style="font-size:48px;margin-bottom:16px;">🚫</div><div style="font-weight:800;font-size:20px;margin-bottom:8px;">Access Denied</div><div style="color:#444;font-size:14px;">Admins only.</div><a href="/" style="display:block;margin-top:24px;color:#C9A84C;font-weight:600;">← Back to app</a></div></div>`;
+    return;
+  }
+
+  app.innerHTML = `
+  <header class="header">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="logo-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div><div style="font-weight:800;font-size:17px;letter-spacing:-0.03em;color:#F0F0F0;">Admin Panel</div><div style="font-size:10px;color:#383838;letter-spacing:0.1em;text-transform:uppercase;font-weight:600;">OrderFlow</div></div>
+    </div>
+    <button class="logout-btn press" id="logout-btn">Log Out</button>
+  </header>
+  ${renderDashboard()}`;
+
+  document.getElementById('logout-btn')?.addEventListener('click', async () => {
+    await sb.auth.signOut();
+    state.user=null; state.isAdmin=false; state.vendors=[];
+    render();
+  });
+  document.getElementById('search-input')?.addEventListener('input', e => {
+    state.searchQ=e.target.value; render();
+  });
+  document.querySelectorAll('[data-tab]').forEach(btn => {
+    btn.addEventListener('click', ()=>{ state.tab=btn.dataset.tab; render(); });
+  });
+  document.querySelectorAll('[data-activate]').forEach(btn => {
+    btn.addEventListener('click', ()=> activateVendor(btn.dataset.activate));
+  });
+  document.querySelectorAll('[data-deactivate]').forEach(btn => {
+    btn.addEventListener('click', ()=> deactivateVendor(btn.dataset.deactivate));
+  });
+  document.querySelectorAll('[data-extend]').forEach(btn => {
+    btn.addEventListener('click', ()=> extendVendor(btn.dataset.extend));
+  });
+}
+
+async function init() {
+  try {
+    const { data:{ session } } = await sb.auth.getSession();
+    if(session?.user) {
+      state.user = session.user;
+      const { data:profile } = await sb.from('profiles')
+        .select('is_admin')
+        .eq('id', session.user.id)
+        .single();
+      state.isAdmin = profile?.is_admin === true;
+      if(state.isAdmin) await loadVendors();
+    }
+  } catch(e) {
+    console.log('init error:', e);
+  }
+  render();
+
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if(session?.user) {
+      state.user = session.user;
+      const { data:profile } = await sb.from('profiles')
+        .select('is_admin')
+        .eq('id', session.user.id)
+        .single();
+      state.isAdmin = profile?.is_admin === true;
+      if(state.isAdmin) await loadVendors();
+      else state.vendors=[];
+    } else {
+      state.user=null; state.isAdmin=false; state.vendors=[];
+    }
+    render();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
