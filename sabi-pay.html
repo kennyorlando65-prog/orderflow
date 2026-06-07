@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pay — Sabi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F5F4F0; --surface: #EFEDE8; --border: #D8D4CA;
+    --orange: #D4570A; --orange-dark: #B84808;
+    --text: #1A1714; --text-2: #4A4540; --text-3: #8A8178;
+    --white: #FFFFFF; --success: #1A7A4A; --success-bg: #E8F5EE;
+    --error: #C0392B; --error-bg: #FDECEA;
+    --shadow: 0 4px 16px rgba(26,23,20,0.10), 0 1px 4px rgba(26,23,20,0.06);
+    --shadow-3d: 0 6px 0 #C4C0B6, 0 10px 30px rgba(26,23,20,0.14);
+    --font-serif: 'Instrument Serif', Georgia, serif;
+    --font-sans: 'Geist', system-ui, sans-serif;
+    --radius: 16px; --radius-sm: 10px;
+  }
+  html, body { height: 100%; }
+  body { font-family: var(--font-sans); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 0 0 40px; }
+
+  .pay-header { width: 100%; background: var(--white); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 8px; margin-bottom: 0; }
+  .pay-header-logo { width: 30px; height: 30px; background: var(--orange); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+  .pay-header-logo svg { width: 17px; height: 17px; }
+  .pay-header-name { font-family: var(--font-serif); font-size: 1.2rem; color: var(--text); }
+  .pay-header-secure { display: flex; align-items: center; gap: 4px; margin-left: auto; font-size: 0.72rem; color: var(--text-3); }
+  .pay-header-secure svg { width: 13px; height: 13px; color: var(--success); }
+
+  .pay-wrap { width: 100%; max-width: 440px; padding: 28px 20px 0; }
+
+  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .vendor-card { background: var(--white); border-radius: 20px; padding: 24px; box-shadow: var(--shadow-3d); border: 1px solid var(--border); margin-bottom: 20px; text-align: center; opacity: 0; transform: translateY(16px); animation: fadeUp 0.5s 0.1s forwards; }
+  .vendor-avatar { width: 64px; height: 64px; background: var(--orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-size: 1.6rem; color: white; margin: 0 auto 14px; box-shadow: 0 4px 0 var(--orange-dark), 0 6px 16px rgba(212,87,10,0.3); }
+  .vendor-name { font-family: var(--font-serif); font-size: 1.5rem; color: var(--text); margin-bottom: 4px; }
+  .vendor-tag { font-size: 0.78rem; color: var(--text-3); }
+
+  .order-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; margin-bottom: 20px; box-shadow: var(--shadow); opacity: 0; transform: translateY(16px); animation: fadeUp 0.5s 0.2s forwards; }
+  .order-card-header { padding: 14px 18px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .order-card-header h3 { font-size: 0.82rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+  .order-ref { font-size: 0.75rem; color: var(--text-3); font-family: monospace; }
+  .order-items-list { padding: 6px 0; }
+  .order-item-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 18px; border-bottom: 1px solid var(--border); }
+  .order-item-row:last-child { border: none; }
+  .order-item-info { flex: 1; }
+  .order-item-name { font-size: 0.9rem; font-weight: 500; color: var(--text); }
+  .order-item-qty { font-size: 0.75rem; color: var(--text-3); margin-top: 2px; }
+  .order-item-price { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+  .order-total-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; background: var(--surface); border-top: 2px solid var(--border); }
+  .order-total-label { font-size: 0.85rem; font-weight: 600; color: var(--text-2); }
+  .order-total-amount { font-family: var(--font-serif); font-size: 1.8rem; color: var(--orange); }
+
+  .order-meta { padding: 14px 18px; border-top: 1px dashed var(--border); }
+  .meta-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+  .meta-row:last-child { margin: 0; }
+  .meta-row svg { width: 14px; height: 14px; color: var(--text-3); min-width: 14px; margin-top: 2px; }
+  .meta-row span { font-size: 0.82rem; color: var(--text-2); }
+
+  .pay-section { opacity: 0; transform: translateY(16px); animation: fadeUp 0.5s 0.3s forwards; }
+  .btn-pay { width: 100%; padding: 17px; background: var(--orange); color: white; border: none; border-radius: 14px; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 0.01em; box-shadow: 0 5px 0 var(--orange-dark), 0 8px 24px rgba(212,87,10,0.35); display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .btn-pay:hover { transform: translateY(-2px); box-shadow: 0 7px 0 var(--orange-dark), 0 12px 30px rgba(212,87,10,0.4); }
+  .btn-pay:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--orange-dark), 0 4px 12px rgba(212,87,10,0.2); }
+  .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: 0 3px 0 var(--orange-dark); }
+  .btn-pay svg { width: 20px; height: 20px; }
+  .pay-note { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 14px; font-size: 0.76rem; color: var(--text-3); }
+  .pay-note svg { width: 13px; height: 13px; }
+  .pay-methods { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .pay-method-badge { padding: 5px 12px; background: var(--white); border: 1.5px solid var(--border); border-radius: 6px; font-size: 0.72rem; font-weight: 600; color: var(--text-2); }
+
+  /* States */
+  .state-card { display: none; }
+  .state-card.show { display: block; animation: fadeUp 0.5s forwards; opacity: 0; transform: translateY(16px); }
+
+  .success-card { background: var(--white); border-radius: 20px; padding: 40px 24px; box-shadow: var(--shadow-3d); text-align: center; border: 2px solid var(--success); }
+  .success-icon { width: 72px; height: 72px; background: var(--success-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 4px 0 rgba(26,122,74,0.2), 0 6px 20px rgba(26,122,74,0.2); }
+  .success-icon svg { width: 36px; height: 36px; color: var(--success); }
+  .success-amount { font-family: var(--font-serif); font-size: 2.4rem; color: var(--success); margin-bottom: 6px; }
+  .success-title { font-family: var(--font-serif); font-size: 2rem; color: var(--text); margin-bottom: 8px; }
+  .success-sub { font-size: 0.9rem; color: var(--text-2); line-height: 1.65; margin-bottom: 20px; }
+  .success-ref { font-size: 0.75rem; color: var(--text-3); font-family: monospace; }
+
+  .paid-card { background: var(--success-bg); border: 2px solid var(--success); border-radius: 20px; padding: 28px 24px; text-align: center; }
+  .paid-card h2 { font-family: var(--font-serif); font-size: 1.6rem; color: var(--success); margin-bottom: 8px; }
+  .paid-card p { font-size: 0.88rem; color: var(--success); }
+
+  .error-card { background: var(--white); border-radius: 20px; padding: 40px 24px; box-shadow: var(--shadow); text-align: center; }
+  .error-icon { width: 64px; height: 64px; background: var(--error-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+  .error-icon svg { width: 32px; height: 32px; color: var(--error); }
+  .error-title { font-family: var(--font-serif); font-size: 1.5rem; color: var(--text); margin-bottom: 8px; }
+  .error-sub { font-size: 0.88rem; color: var(--text-2); line-height: 1.6; }
+
+  .loading-state { text-align: center; padding: 60px 24px; }
+  .loading-spinner { width: 44px; height: 44px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+  .loading-state p { font-size: 0.9rem; color: var(--text-3); }
+
+  .powered-by { text-align: center; margin-top: 28px; font-size: 0.72rem; color: var(--text-3); display: flex; align-items: center; justify-content: center; gap: 6px; }
+</style>
+</head>
+<body>
+
+<div class="pay-header">
+  <div class="pay-header-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  </div>
+  <span class="pay-header-name">Sabi</span>
+  <div class="pay-header-secure">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Secured by Paystack
+  </div>
+</div>
+
+<div class="pay-wrap">
+  <!-- LOADING -->
+  <div class="loading-state" id="loading-state">
+    <div class="loading-spinner"></div>
+    <p>Loading your order...</p>
+  </div>
+
+  <!-- ORDER INFO -->
+  <div id="order-info" style="display:none">
+    <div class="vendor-card">
+      <div class="vendor-avatar" id="vendor-avatar">?</div>
+      <div class="vendor-name" id="vendor-name">Loading...</div>
+      <div class="vendor-tag">Secure payment via Sabi</div>
+    </div>
+    <div class="order-card">
+      <div class="order-card-header">
+        <h3>Your order</h3>
+        <span class="order-ref" id="order-ref">#—</span>
+      </div>
+      <div class="order-items-list" id="order-items-list"></div>
+      <div id="order-meta-section" class="order-meta" style="display:none">
+        <div class="meta-row" id="meta-customer" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span id="meta-customer-val"></span>
+        </div>
+        <div class="meta-row" id="meta-address" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span id="meta-address-val"></span>
+        </div>
+        <div class="meta-row" id="meta-notes" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span id="meta-notes-val"></span>
+        </div>
+      </div>
+      <div class="order-total-row">
+        <span class="order-total-label">Total to pay</span>
+        <span class="order-total-amount" id="order-total">N0</span>
+      </div>
+    </div>
+    <div class="pay-section">
+      <button class="btn-pay" id="pay-btn" onclick="initiatePayment()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        <span id="pay-btn-text">Pay now</span>
+      </button>
+      <div class="pay-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        256-bit encrypted. Card details never stored.
+      </div>
+      <div class="pay-methods">
+        <span class="pay-method-badge">Card</span>
+        <span class="pay-method-badge">Bank Transfer</span>
+        <span class="pay-method-badge">USSD</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="state-card success-card" id="success-card">
+    <div class="success-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <div class="success-amount" id="success-amount">N0</div>
+    <div class="success-title">Payment confirmed</div>
+    <div class="success-sub">Your order has been paid and confirmed.<br>The vendor has been notified.</div>
+    <div class="success-ref" id="success-ref"></div>
+  </div>
+
+  <!-- ALREADY PAID -->
+  <div class="state-card paid-card" id="paid-card">
+    <h2>Already paid</h2>
+    <p>This order has already been paid. Thank you for your purchase.</p>
+  </div>
+
+  <!-- ERROR -->
+  <div class="state-card error-card" id="error-card">
+    <div class="error-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    </div>
+    <div class="error-title">Order not found</div>
+    <div class="error-sub" id="error-msg">This payment link may be invalid or expired. Please contact the vendor for a new link.</div>
+  </div>
+
+  <div class="powered-by">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Powered by Sabi — Commerce for Nigerian vendors
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://kxkiysmbwltvztrswegg.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4a2l5c21id2x0dnp0cnN3ZWdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5OTE0MDksImV4cCI6MjA4OTU2NzQwOX0.cmuQ1gP0n0yvEiclC_988zhEGrmGZMMqHJzDK9_b2Jc';
+const PAYSTACK_PK = 'pk_test_08fd276cb3bc9b2a5ccd5bb876e9da260f14e9e2';
+
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const VERCEL_URL = 'https://orderflow-dkga.vercel.app';
+
+/*
+  REQUIRED SUPABASE RLS POLICIES — run these in Supabase SQL editor:
+
+  -- Allow anyone to read an order if it has a payment_link (i.e. vendor shared it)
+  CREATE POLICY "Public can read orders with payment link"
+  ON orders FOR SELECT
+  TO anon
+  USING (payment_link IS NOT NULL);
+
+  -- Allow anyone to read vendor profile (business name only) for pay page
+  CREATE POLICY "Public can read vendor business name"
+  ON profiles FOR SELECT
+  TO anon
+  USING (true);
+
+  -- Allow anon to update payment status (webhook does this server-side,
+  -- but we also do optimistic update from client after Paystack callback)
+  CREATE POLICY "Public can update payment status"
+  ON orders FOR UPDATE
+  TO anon
+  USING (payment_link IS NOT NULL)
+  WITH CHECK (payment_link IS NOT NULL);
+*/
+
+let orderData = null;
+let vendorProfile = null;
+let paymentInProgress = false;
+
+function getOrderId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('order') || params.get('id');
+}
+
+// FIX: unified show function using style.display consistently
+function showState(id) {
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('order-info').style.display = 'none';
+  ['success-card', 'paid-card', 'error-card'].forEach(s => {
+    const el = document.getElementById(s);
+    el.classList.remove('show');
+  });
+  if (id === 'order-info') {
+    document.getElementById('order-info').style.display = 'block';
+  } else if (id === 'loading-state') {
+    document.getElementById('loading-state').style.display = 'block';
+  } else {
+    // FIX: use requestAnimationFrame so CSS transition fires correctly
+    requestAnimationFrame(() => {
+      document.getElementById(id).classList.add('show');
+    });
+  }
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function loadOrder() {
+  const orderId = getOrderId();
+  if (!orderId) {
+    showState('error-card');
+    document.getElementById('error-msg').textContent = 'No order ID provided in this link.';
+    return;
+  }
+
+  let order = null;
+
+  // Try direct Supabase first (works if RLS policy is set — see SQL comments above)
+  try {
+    const { data, error } = await sbClient.from('orders').select('*').eq('id', orderId).single();
+    if (!error && data) order = data;
+  } catch {}
+
+  // Fallback: fetch via Vercel API using service role key server-side
+  if (!order) {
+    try {
+      const res = await fetch(`${VERCEL_URL}/api/get-order?id=${encodeURIComponent(orderId)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.order) order = json.order;
+      }
+    } catch {}
+  }
+
+  if (!order) {
+    showState('error-card');
+    document.getElementById('error-msg').textContent = 'Order not found. This link may be invalid or expired.';
+    return;
+  }
+
+  orderData = order;
+
+  if (order.payment_status === 'paid') {
+    showState('paid-card');
+    return;
+  }
+
+  // FIX: handle cancelled orders
+  if (order.payment_status === 'cancelled') {
+    showState('error-card');
+    document.getElementById('error-msg').textContent = 'This order has been cancelled. Please contact the vendor for a new order.';
+    return;
+  }
+
+  const { data: vendor } = await sbClient.from('profiles').select('business_name, phone, paystack_subaccount').eq('id', order.user_id).single();
+  vendorProfile = vendor;
+
+  const bizName = vendor?.business_name || 'Vendor';
+  document.getElementById('vendor-name').textContent = bizName;
+  document.getElementById('vendor-avatar').textContent = bizName[0].toUpperCase();
+  document.getElementById('order-ref').textContent = `#${orderId.slice(-8).toUpperCase()}`;
+  document.title = `Pay N${(order.total || 0).toLocaleString()} — ${bizName}`;
+
+  const items = Array.isArray(order.items) ? order.items : [];
+  document.getElementById('order-items-list').innerHTML = items.length > 0
+    ? items.map(item => `
+        <div class="order-item-row">
+          <div class="order-item-info">
+            <div class="order-item-name">${escHtml(item.name)}</div>
+            <div class="order-item-qty">x${item.qty}</div>
+          </div>
+          <div class="order-item-price">N${((item.price || 0) * (item.qty || 1)).toLocaleString()}</div>
+        </div>`).join('')
+    : `<div style="padding:16px 18px;font-size:0.88rem;color:var(--text-3)">Order details not available.</div>`;
+
+  const total = order.total || 0;
+  document.getElementById('order-total').textContent = `N${total.toLocaleString()}`;
+  document.getElementById('pay-btn-text').textContent = `Pay N${total.toLocaleString()}`;
+
+  let hasMeta = false;
+  if (order.customer_name) {
+    document.getElementById('meta-customer').style.display = 'flex';
+    document.getElementById('meta-customer-val').textContent = order.customer_name + (order.phone ? ` — ${order.phone}` : '');
+    hasMeta = true;
+  }
+  if (order.address) {
+    document.getElementById('meta-address').style.display = 'flex';
+    document.getElementById('meta-address-val').textContent = order.address;
+    hasMeta = true;
+  }
+  if (order.notes) {
+    document.getElementById('meta-notes').style.display = 'flex';
+    document.getElementById('meta-notes-val').textContent = order.notes;
+    hasMeta = true;
+  }
+  if (hasMeta) document.getElementById('order-meta-section').style.display = '';
+
+  showState('order-info');
+}
+
+function initiatePayment() {
+  if (!orderData || paymentInProgress) return;
+  paymentInProgress = true;
+  const btn = document.getElementById('pay-btn');
+  btn.disabled = true;
+  document.getElementById('pay-btn-text').textContent = 'Opening payment...';
+
+  const phone = orderData.phone || '';
+  const customerEmail = phone
+    ? `${phone.replace(/\D/g, '')}@sabi.pay`
+    : `order-${orderData.id.slice(-8)}@sabi.pay`;
+
+  const total = orderData.total || 0;
+  const ref = `sabi-${orderData.id.slice(-12)}-${Date.now()}`;
+
+  const config = {
+    key: PAYSTACK_PK,
+    email: customerEmail,
+    amount: Math.round(total * 100), // kobo
+    currency: 'NGN',
+    ref,
+    metadata: {
+      order_id: orderData.id,
+      customer_name: orderData.customer_name || '',
+      custom_fields: [
+        { display_name: 'Order ID', variable_name: 'order_id', value: orderData.id },
+        { display_name: 'Customer', variable_name: 'customer_name', value: orderData.customer_name || '' },
+        { display_name: 'Vendor', variable_name: 'vendor', value: vendorProfile?.business_name || '' }
+      ]
+    },
+    // FIX: use correct Paystack v1 inline callback/onClose API
+    callback: async (response) => {
+      paymentInProgress = false;
+      if (response.status === 'success') {
+        // Optimistic UI update; webhook will confirm properly server-side
+        await sbClient.from('orders').update({
+          payment_status: 'paid',
+          payment_reference: response.reference,
+          paid_at: new Date().toISOString()
+        }).eq('id', orderData.id);
+        document.getElementById('success-amount').textContent = `N${total.toLocaleString()}`;
+        document.getElementById('success-ref').textContent = `Ref: ${response.reference}`;
+        showState('success-card');
+      } else {
+        btn.disabled = false;
+        document.getElementById('pay-btn-text').textContent = `Pay N${total.toLocaleString()}`;
+      }
+    },
+    onClose: () => {
+      // FIX: only re-enable if payment didn't succeed
+      if (paymentInProgress) {
+        paymentInProgress = false;
+        btn.disabled = false;
+        document.getElementById('pay-btn-text').textContent = `Pay N${total.toLocaleString()}`;
+      }
+    }
+  };
+
+  // FIX: correct Paystack inline API — PaystackPop.setup(config) returns a handler; call openIframe() on it
+  try {
+    const handler = PaystackPop.setup(config);
+    handler.openIframe();
+  } catch (e) {
+    paymentInProgress = false;
+    btn.disabled = false;
+    document.getElementById('pay-btn-text').textContent = `Pay N${total.toLocaleString()}`;
+    console.error('Paystack error:', e);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadOrder);
+</script>
+</body>
+</html>
