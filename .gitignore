@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# local env files - NEVER commit real values
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+
+# editor / os
+.DS_Store
+.idea/
+.vscode/
+
+# vercel
+.vercel
